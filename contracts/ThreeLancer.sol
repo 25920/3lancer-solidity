@@ -168,7 +168,7 @@ contract ThreeLancer {
         ) public view returns (Service[] memory) {
         Service[] memory allEverCreated = new Service[](serviceAmount);
         uint256 f = 0;
-        for (uint i  =0;i<serviceAmount;i++) {
+        for (uint i=0;i<serviceAmount;i++) {
             Service memory item = services[i];
             if (item.available == true ) {
                 allEverCreated[i]=item;
