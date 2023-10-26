@@ -24,18 +24,25 @@ contract ThreeLancer {
         uint256 serviceId;
         address buyer;
         bool delivered;
-        bool continued;
     }
 
+    struct Current {
+        uint256 serviceId;
+        bool done;
+    }
+
+    mapping (address => uint256[]) public okayServiceIds;
     mapping (address => bool) public verified;
     mapping (address => bool) public isRegistered;
     mapping (uint256 => Service) public services;
     mapping (uint256 => Purchased) public records;
+    mapping (address => Current[]) public currency;
     uint256 public serviceAmount;
     uint256 public tradeAmount;
     uint256 public clientAmount;
 
     function changeFee(uint256 _id, uint256 _fee) public {
+        require(msg.sender==deployer,"");
         Service storage service = services[_id];
         service.fee=_fee;
     }
@@ -44,10 +51,18 @@ contract ThreeLancer {
         return services[_id].pastBuyers;
     }
 
-    function verifyAnAddress(address _address) public {
+    function verifyAnAddress(address _address,uint256[] memory _ids) public {
         require(msg.sender==deployer,"");
         require(deployer!=_address,"");
         verified[_address]=true;
+        for (uint j=0;j<_ids.length;j++) {
+            okayServiceIds[_address].push(_ids[j]);
+        }
+    }
+
+    function getOkayIds(address _address) public view returns (uint256[] memory) {
+        uint256[] memory okay = okayServiceIds[_address];
+        return okay;
     }
 
     function deAvailable(uint256 _id) public {
@@ -88,16 +103,40 @@ contract ThreeLancer {
         return serviceAmount-_services.length;
     }
 
-    function buyAService(uint256 _id) public payable returns (uint256) {
+    function checkCurrency(address _address) public view returns (uint256) {
+        require(msg.sender==_address || msg.sender==deployer,"");
+        Current[] memory allCurrent = currency[_address];
+        uint256 h = 0;
+        for (uint g=0;g<allCurrent.length;g++) {
+            if (allCurrent[g].done==false) {
+                h+=1;
+            }
+        }
+        return h;
+    }
+
+    function updateCurrency(address _address, uint256 _id) public {
+        require(msg.sender==_address,"");
+        Current storage thisCurrent = currency[_address][_id];
+        thisCurrent.done=true;
+    }
+
+    function buyAService(uint256 _id,uint256 _serviceIdOkay) public payable returns (uint256) {
         require(isRegistered[msg.sender]==true,"");
         require(verified[msg.sender]==true,"");
+        bool k = false;
+        uint256[] memory okays = getOkayIds(msg.sender);
+        for (uint p=0;p<okays.length;p++) {
+            if (okays[p] == _serviceIdOkay) {
+                k  =true;
+            } 
+        }
+        require(k==true,"");
         Service storage buyService = services[_id];
         Purchased storage record = records[tradeAmount];
         record.id=tradeAmount;
-        record.continued=false;
-        if (verified[msg.sender]==true) {
-            record.continued=true;
-        }
+        Current memory current_mem = Current(buyService.id,false);
+        currency[msg.sender].push(current_mem);
         buyService.pastBuyers.push(msg.sender);
         record.delivered=false;
         record.buyer=msg.sender;
@@ -108,7 +147,7 @@ contract ThreeLancer {
         return tradeAmount-1;
     }
 
-    function paySecondHalfAllDone(uint256 _serviceId,uint256 _recordId) public payable {
+    function paySecondHalfAllDone(uint256 _serviceId,uint256 _recordId,uint256 _sequence) public payable {
         require(isRegistered[msg.sender]==true,"");
         Service memory buyService = services[_serviceId];
         bool isThere = false;
@@ -127,11 +166,12 @@ contract ThreeLancer {
         if (record.delivered==true) {
             require(msg.value==buyService.fee*50/100,"");
             payable(deployer).transfer(msg.value);
-            if (record.continued==true) {
-                
+            uint256 number = checkCurrency(msg.sender);
+            updateCurrency(msg.sender, _sequence);
+            if (number > 0) {
+
             } else {
                 verified[msg.sender]=false;
-                record.continued=false;
             }
         }
     }
