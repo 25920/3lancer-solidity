@@ -121,6 +121,7 @@ contract ThreeLancer {
         }
         require(k==true,"");
         Service storage buyService = services[_id];
+        require(buyService.available==true,"");
         Purchased storage record = records[tradeAmount];
         record.id=tradeAmount;
         Current memory current_mem = Current(buyService.id,false);
@@ -198,7 +199,6 @@ contract ThreeLancer {
 
     function everyPurchasedData(
         ) public view returns (Purchased[] memory) {
-        require(tradeAmount>0,"");
         Purchased[] memory allPurchase = new Purchased[](tradeAmount);
         for (uint i  =0;i<tradeAmount;i++) {
             Purchased memory record = records[i];
