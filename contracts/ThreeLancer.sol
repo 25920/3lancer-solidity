@@ -108,13 +108,13 @@ contract ThreeLancer {
         thisCurrent.done=true;
     }
 
-    function buyAService(uint256 _id,uint256 _serviceIdOkay) public payable returns (uint256) {
+    function buyAService(uint256 _id) public payable returns (uint256) {
         require(isRegistered[msg.sender]==true,"");
         require(verified[msg.sender]==true,"");
         bool k = false;
         uint256[] memory okays = getOkayIds(msg.sender);
         for (uint p=0;p<okays.length;p++) {
-            if (okays[p] == _serviceIdOkay) {
+            if (okays[p] == _id) {
                 k  =true;
                 break;
             } 
