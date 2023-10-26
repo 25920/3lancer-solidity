@@ -15,7 +15,6 @@ contract ThreeLancer {
         uint256 fee;
         uint256 intervalInDays;
         string category;
-        uint256 appaulse;
         bool available;
         address[] pastBuyers;
     }
@@ -25,6 +24,7 @@ contract ThreeLancer {
         uint256 serviceId;
         address buyer;
         bool delivered;
+        bool continued;
     }
 
     mapping (address => bool) public verified;
@@ -35,7 +35,12 @@ contract ThreeLancer {
     uint256 public tradeAmount;
     uint256 public clientAmount;
 
-    function getAServiceRecords(uint256 _id) view public returns (address[] memory) {
+    function changeFee(uint256 _id, uint256 _fee) public {
+        Service storage service = services[_id];
+        service.fee=_fee;
+    }
+
+    function getServiceBuyerRecords(uint256 _id) view public returns (address[] memory) {
         return services[_id].pastBuyers;
     }
 
@@ -50,11 +55,6 @@ contract ThreeLancer {
         service.available=false;
     }
 
-    function likeIt(uint256 _id) public {
-        Service storage service = services[_id];
-        service.appaulse+=1;
-    }
-
     function createAnUserAccount() public returns (uint256) {
         require(isRegistered[msg.sender]==false,"");
         require(msg.sender!=deployer,"");
@@ -64,24 +64,28 @@ contract ThreeLancer {
     }
 
     function createAService(
-        string memory _name,
-        string memory _description,
-        uint256 _fee,
-        uint256 _intervalInDays,
-        string memory _category
+        // string[] memory _name,
+        // string[] memory _description,
+        // uint256[] memory _fee,
+        // uint256[] memory _intervalInDays,
+        // string[] memory _category,
+        Service[] memory _services
     ) public returns (uint256) {
         require(msg.sender==deployer,"");
-        Service storage service = services[serviceAmount];
-        service.name=_name;
-        service.id=serviceAmount;
-        service.fee=_fee;
-        service.intervalInDays=_intervalInDays;
-        service.appaulse=0;
-        service.description=_description;
-        service.category=_category;
-        service.available=true;
-        serviceAmount+=1;
-        return serviceAmount-1;
+        for (uint y=0;y<_services.length;y++) {
+            Service memory temp = _services[y];
+            services[serviceAmount]=temp;
+            serviceAmount+=1;
+        }
+        // service.name=_name;
+        // service.id=serviceAmount;
+        // service.fee=_fee;
+        // service.intervalInDays=_intervalInDays;
+        // service.description=_description;
+        // service.category=_category;
+        // service.available=true;
+        // serviceAmount+=1;
+        return serviceAmount-_services.length;
     }
 
     function buyAService(uint256 _id) public payable returns (uint256) {
@@ -90,6 +94,10 @@ contract ThreeLancer {
         Service storage buyService = services[_id];
         Purchased storage record = records[tradeAmount];
         record.id=tradeAmount;
+        record.continued=false;
+        if (verified[msg.sender]==true) {
+            record.continued=true;
+        }
         buyService.pastBuyers.push(msg.sender);
         record.delivered=false;
         record.buyer=msg.sender;
@@ -119,7 +127,12 @@ contract ThreeLancer {
         if (record.delivered==true) {
             require(msg.value==buyService.fee*50/100,"");
             payable(deployer).transfer(msg.value);
-            verified[msg.sender]=false;
+            if (record.continued==true) {
+                
+            } else {
+                verified[msg.sender]=false;
+                record.continued=false;
+            }
         }
     }
 
