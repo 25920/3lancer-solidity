@@ -78,7 +78,7 @@ contract ThreeLancer {
         return clientAmount-1;
     }
 
-    function createAService(
+    function createServices(
         Service[] memory _services
     ) public returns (uint256) {
         require(msg.sender==deployer,"");
@@ -116,6 +116,7 @@ contract ThreeLancer {
         for (uint p=0;p<okays.length;p++) {
             if (okays[p] == _serviceIdOkay) {
                 k  =true;
+                break;
             } 
         }
         require(k==true,"");
@@ -150,16 +151,14 @@ contract ThreeLancer {
         require(msg.sender==record.buyer,"");
         require(record.delivered==false);
         record.delivered=true;
-        if (record.delivered==true) {
-            require(msg.value==buyService.fee*50/100,"");
-            payable(deployer).transfer(msg.value);
-            uint256 number = checkCurrency(msg.sender);
-            updateCurrency(msg.sender, _sequence);
-            if (number > 0) {
+        require(msg.value==buyService.fee*50/100,"");
+        payable(deployer).transfer(msg.value);
+        updateCurrency(msg.sender, _sequence);
+        uint256 number = checkCurrency(msg.sender);
+        if (number > 0) {
 
-            } else {
-                verified[msg.sender]=false;
-            }
+        } else {
+            verified[msg.sender]=false;//?
         }
     }
 
