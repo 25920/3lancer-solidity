@@ -166,17 +166,19 @@ contract ThreeLancer {
     function allAvailableService(
         ) public view returns (Service[] memory) {
         Service[] memory allEverCreated = new Service[](serviceAmount);
+        uint256 f = 0;
         for (uint i  =0;i<serviceAmount;i++) {
             Service memory item = services[i];
             if (item.available == true ) {
                 allEverCreated[i]=item;
+                f+=1;
             }
         }
-        if (allEverCreated.length == serviceAmount) {
+        if (f == serviceAmount) {
             return allEverCreated;
         } else {
-            Service[] memory left = new Service[](allEverCreated.length);
-            for (uint i  =0;i<allEverCreated.length;i++) {
+            Service[] memory left = new Service[](f);
+            for (uint i  =0;i<f;i++) {
                 left[i]=allEverCreated[i];
             }
             return left;
