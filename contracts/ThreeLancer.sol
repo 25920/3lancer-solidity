@@ -135,7 +135,8 @@ contract ThreeLancer {
         return tradeAmount-1;
     }
 
-    function paySecondHalfAllDone(uint256 _serviceId,uint256 _recordId,uint256 _sequence) public payable {
+    function paySecondHalfAllDone(uint256 _serviceId,uint256 _recordId,
+    uint256 _sequence) public payable {
         require(isRegistered[msg.sender]==true,"");
         Service memory buyService = services[_serviceId];
         bool isThere = false;
@@ -155,10 +156,10 @@ contract ThreeLancer {
         payable(deployer).transfer(msg.value);
         updateCurrency(msg.sender, _sequence);
         uint256 number = checkCurrency(msg.sender);
-        if (number > 0) {
+        if (number >1) {
 
         } else {
-            verified[msg.sender]=false;//?
+            verified[msg.sender]=false;
         }
     }
 
