@@ -79,11 +79,6 @@ contract ThreeLancer {
     }
 
     function createAService(
-        // string[] memory _name,
-        // string[] memory _description,
-        // uint256[] memory _fee,
-        // uint256[] memory _intervalInDays,
-        // string[] memory _category,
         Service[] memory _services
     ) public returns (uint256) {
         require(msg.sender==deployer,"");
@@ -92,14 +87,6 @@ contract ThreeLancer {
             services[serviceAmount]=temp;
             serviceAmount+=1;
         }
-        // service.name=_name;
-        // service.id=serviceAmount;
-        // service.fee=_fee;
-        // service.intervalInDays=_intervalInDays;
-        // service.description=_description;
-        // service.category=_category;
-        // service.available=true;
-        // serviceAmount+=1;
         return serviceAmount-_services.length;
     }
 
