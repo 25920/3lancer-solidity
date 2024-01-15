@@ -1,46 +1,20 @@
-require("@matterlabs/hardhat-zksync-solc");
+// require("@matterlabs/hardhat-zksync-solc");
+require('dotenv').config();
 
-/** @type import('hardhat/config').HardhatUserConfig */
+// /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  // zksolc: {
-  //   version: "1.3.9",
-  //   compilerSource: "binary",
-  //   settings: {
-  //     optimizer: {
-  //       enabled: true,
-  //     },
-  //   },
-  // },
-  // networks: {
-  //   zksync_testnet: {
-  //     url: "https://zksync2-testnet.zksync.dev",
-  //     ethNetwork: "goerli",
-  //     chainId: 280,
-  //     zksync: true,
-  //   },
-  //   zksync_mainnet: {
-  //     url: "https://zksync2-mainnet.zksync.io/",
-  //     ethNetwork: "mainnet",
-  //     chainId: 324,
-  //     zksync: true,
-  //   },
-  // },
-  // paths: {
-  //   artifacts: "./artifacts-zk",
-  //   cache: "./cache-zk",
-  //   sources: "./contracts",
-  //   tests: "./test",
-  // },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
+  networks: {
+    seoplia: {
+      url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [`0x${process.env.PRI_KEY}`],
+    },
+  },
   solidity: {
     version: "0.8.17",
-    defaultNetwork:"goerli",
-    networks:{
-      hardhat:{},
-        goerli:{
-          url:"https://www.ankr.com/rpc/eth/eth_goerli/",
-          // accounts:[`0x${process.env.prikey}`]
-        }
-    },
+    defaultNetwork:"sepolia",
     settings: {
       optimizer: {
         enabled: true,
