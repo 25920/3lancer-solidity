@@ -85,20 +85,24 @@ contract ThreeLancer {
     function updateMappingVerified(uint256 _singleTargetId) notOwner public view returns (uint256[] memory) {
         uint256[] memory map = verified[msg.sender];
         require(ifVerifiedOnId(_singleTargetId)==true,"");
-        uint256[] memory newMap = new uint256[](verified[msg.sender].length-1);
-        bool passed=false;
-        for (uint e=0;e<map.length;e++) {
-            if (map[e]!=_singleTargetId){
-                newMap[newMap.length]=map[e];
-            } else {
-                if (passed==true) {
+        if (verified[msg.sender].length-1==0) {
+            return new uint256[](0);
+        } else {
+            uint256[] memory newMap = new uint256[](verified[msg.sender].length-1);
+            bool passed=false;
+            for (uint e=0;e<map.length;e++) {
+                if (map[e]!=_singleTargetId){
                     newMap[newMap.length]=map[e];
                 } else {
-                    passed=true;
+                    if (passed==true) {
+                        newMap[newMap.length]=map[e];
+                    } else {
+                        passed=true;
+                    }
                 }
             }
+            return newMap;
         }
-        return newMap;
     }
 
     function payOneServicesSecondHalf(uint256 _id) notOwner public payable {
