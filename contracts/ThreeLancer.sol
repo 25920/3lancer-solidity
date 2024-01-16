@@ -58,9 +58,25 @@ contract ThreeLancer {
         return k;
     }
 
-    function upfrontHalfofEachServicesCost(uint256 _serviceId) public payable returns (uint256) {
+    function upfrontHalfofEachServicesCost(uint256[] memory _serviceIds) public payable returns (uint256) {
         require(msg.sender!=deployer,"");
-        require(ifVerifiedOnId(_serviceId)==true,"");
+        uint256 cost;
+        for (uint f = 0;f < _serviceIds.length;f++) {
+            require(ifVerifiedOnId(_serviceIds[f])==true,"");
+            Service storage newProject = services[_serviceIds[f]];
+            require(newProject.available==true,"");
+            Purchased storage newRecord = records[tradeAmount];
+            newRecord.id = tradeAmount;
+            newProject.pastBuyers.push(msg.sender); // can be duplicate
+            newRecord.delivered=false;
+            newRecord.buyer=msg.sender;
+            newRecord.serviceId=_serviceIds[f];
+            cost+=newProject.fee*50/100;
+            tradeAmount+=1;
+        }
+        require(msg.value==cost,"");
+        payable(deployer).transfer(msg.value);
+        return tradeAmount-_serviceIds.length;
     }
 
     function changeDetail(uint256 _id, uint256 _fee,string memory _desp, string memory _title, uint256 _d) onlyOwner public {
@@ -94,6 +110,11 @@ contract ThreeLancer {
     ) onlyOwner public returns (uint256) {
         for (uint y=0;y<_services.length;y++) {
             Service memory temp = _services[y];
+            // temp.id=serviceAmount;
+            // always make sure the id is correct
+            require(
+                temp.id==serviceAmount&&temp.available==true,""
+            );
             services[serviceAmount]=temp;
             serviceAmount+=1;
         }
