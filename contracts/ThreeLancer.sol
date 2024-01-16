@@ -13,6 +13,11 @@ contract ThreeLancer {
         _;
     }
 
+    modifier notOwner() {
+        require(msg.sender != deployer);
+        _;
+    }
+
     struct Service {
         string name;
         uint256 id;
@@ -45,8 +50,7 @@ contract ThreeLancer {
         }
     }
 
-    function ifVerifiedOnId(uint256 _id) public view returns (bool) {
-        require(msg.sender!=deployer,"");
+    function ifVerifiedOnId(uint256 _id) notOwner public view returns (bool) {
         uint256[] memory allIds = verified[msg.sender];
         bool k = false;
         for (uint h =0;h<allIds.length;h++){
@@ -58,8 +62,7 @@ contract ThreeLancer {
         return k;
     }
 
-    function upfrontHalfofEachServicesCost(uint256[] memory _serviceIds) public payable returns (uint256) {
-        require(msg.sender!=deployer,"");
+    function upfrontHalfofEachServicesCost(uint256[] memory _serviceIds) notOwner public payable returns (uint256) {
         uint256 cost;
         for (uint f = 0;f < _serviceIds.length;f++) {
             require(ifVerifiedOnId(_serviceIds[f])==true,"");
@@ -79,8 +82,37 @@ contract ThreeLancer {
         return tradeAmount-_serviceIds.length;
     }
 
+    function updateMappingVerified(uint256 _singleTargetId) notOwner public view returns (uint256[] memory) {
+        uint256[] memory map = verified[msg.sender];
+        require(ifVerifiedOnId(_singleTargetId)==true,"");
+        uint256[] memory newMap = new uint256[](verified[msg.sender].length-1);
+        bool passed=false;
+        for (uint e=0;e<map.length;e++) {
+            if (map[e]!=_singleTargetId){
+                newMap[newMap.length]=map[e];
+            } else {
+                if (passed==true) {
+                    newMap[newMap.length]=map[e];
+                } else {
+                    passed=true;
+                }
+            }
+        }
+        return newMap;
+    }
+
+    function payOneServicesSecondHalf(uint256 _id) notOwner public payable {
+        require(ifVerifiedOnId(_id)==true,"");
+        Purchased storage oldRecord = records[_id];
+        require(msg.sender==oldRecord.buyer,"");
+        require(oldRecord.delivered==false,"");
+        oldRecord.delivered=true;
+        require(msg.value==services[oldRecord.serviceId].fee*50/100,"");
+        payable(deployer).transfer(msg.value);
+        updateMappingVerified(_id);
+    }
+
     function changeDetail(uint256 _id, uint256 _fee,string memory _desp, string memory _title, uint256 _d) onlyOwner public {
-        require(msg.sender==deployer,"");
         Service storage service = services[_id];
         service.fee=_fee;
         service.intervalInDays=_d;
@@ -89,7 +121,6 @@ contract ThreeLancer {
     }
 
     function getServiceBuyerRecords(uint256 _id) onlyOwner view public returns (address[] memory) {
-        require(msg.sender==deployer,"");
         return services[_id].pastBuyers;
     }
 
@@ -110,7 +141,6 @@ contract ThreeLancer {
     ) onlyOwner public returns (uint256) {
         for (uint y=0;y<_services.length;y++) {
             Service memory temp = _services[y];
-            // temp.id=serviceAmount;
             // always make sure the id is correct
             require(
                 temp.id==serviceAmount&&temp.available==true,""
