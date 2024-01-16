@@ -8,6 +8,11 @@ contract ThreeLancer {
         deployer = msg.sender;
     }
 
+    modifier onlyOwner() {
+        require(msg.sender == deployer);
+        _;
+    }
+
     struct Service {
         string name;
         uint256 id;
@@ -26,70 +31,67 @@ contract ThreeLancer {
         string[] data;
     }
 
-    struct Current {
-        uint256 serviceId;
-        bool done;
-    }
-
-    mapping (address => uint256[]) public okayServiceIds;
-    mapping (address => bool) public verified;
-    // mapping (address => bool) public isRegistered;
     mapping (uint256 => Service) public services;
     mapping (uint256 => Purchased) public records;
-    mapping (address => Current[]) public currency;
+    mapping (address => uint256[]) public verified;
     uint256 public serviceAmount;
     uint256 public tradeAmount;
-    // uint256 public clientAmount;
 
-    function changeFee(uint256 _id, uint256 _fee) public {
-        require(msg.sender==deployer,"");
-        Service storage service = services[_id];
-        service.fee=_fee;
-    }
-
-    function getServiceBuyerRecords(uint256 _id) view public returns (address[] memory) {
-        return services[_id].pastBuyers;
-    }
-
-    function verifyAnAddressOnIds(address _address,uint256[] memory _ids) public {
-        require(msg.sender==deployer&&deployer!=_address,"");
-        require(verified[_address]==false,"");
-        verified[_address]=true; 
-        // verify one address on one to many services
-        for (uint j=0;j<_ids.length;j++) {
-            okayServiceIds[_address].push(_ids[j]);
+    function verifyUser(address _address, uint256[] memory _ids) public {
+        // only allow user to buyer what both of us (msg.sender||deployer and the buyer) aggree on
+        require(msg.sender==deployer&&msg.sender!=_address,"");
+        for (uint j =0;j<_ids.length;j++) {
+            verified[_address][verified[_address].length]=_ids[j];
         }
     }
 
-    function getOkayIdsByAddress(address _address) public view returns (uint256[] memory) {
-        uint256[] memory okay = okayServiceIds[_address];
-        return okay;
+    function ifVerifiedOnId(uint256 _id) public view returns (bool) {
+        require(msg.sender!=deployer,"");
+        uint256[] memory allIds = verified[msg.sender];
+        bool k = false;
+        for (uint h =0;h<allIds.length;h++){
+            if (allIds[h]==_id) {
+                k = true;
+                break;
+            }
+        }
+        return k;
     }
 
-    function deAvailable(uint256 _id) public {
+    function upfrontHalfofEachServicesCost(uint256 _serviceId) public payable returns (uint256) {
+        require(msg.sender!=deployer,"");
+        require(ifVerifiedOnId(_serviceId)==true,"");
+    }
+
+    function changeDetail(uint256 _id, uint256 _fee,string memory _desp, string memory _title, uint256 _d) onlyOwner public {
+        require(msg.sender==deployer,"");
+        Service storage service = services[_id];
+        service.fee=_fee;
+        service.intervalInDays=_d;
+        service.name=_title;
+        service.description=_desp;
+    }
+
+    function getServiceBuyerRecords(uint256 _id) onlyOwner view public returns (address[] memory) {
+        require(msg.sender==deployer,"");
+        return services[_id].pastBuyers;
+    }
+
+    function deAvailable(uint256 _id) onlyOwner public {
         Service storage service = services[_id];
         require(service.available==true,"");
         service.available=false;
     }
 
-    function reAvailable(uint256 _id) public {
+    function reAvailable(uint256 _id) onlyOwner public {
         Service storage service = services[_id];
         require(service.available==false,"");
         service.available=true;
     }
 
-    // function createAnUserAccount() public returns (uint256) {
-    //     require(isRegistered[msg.sender]==false,"");
-    //     require(msg.sender!=deployer,"");
-    //     isRegistered[msg.sender]=true;
-    //     clientAmount+=1;
-    //     return clientAmount-1;
-    // }
-
     function createServices(
         Service[] memory _services
-    ) public returns (uint256) {
-        require(msg.sender==deployer,"");
+    ) onlyOwner public returns (uint256) {
         for (uint y=0;y<_services.length;y++) {
             Service memory temp = _services[y];
             services[serviceAmount]=temp;
@@ -98,86 +100,12 @@ contract ThreeLancer {
         return serviceAmount-_services.length;
     }
 
-    function checkCurrency(address _address) public view returns (uint256) {
-        require(msg.sender==_address || msg.sender==deployer,"");
-        Current[] memory allCurrent = currency[_address];
-        uint256 h = 0;
-        for (uint g=0;g<allCurrent.length;g++) {
-            if (allCurrent[g].done==false) {
-                h+=1;
-            }
-        }
-        return h; // check unfinished work #
-    }
-
-    function updateCurrency(address _address, uint256 _id) public {
-        require(msg.sender==_address,"");
-        Current storage thisCurrent = currency[_address][_id];
-        thisCurrent.done=true;
-    }
-
-    function userBuyService(uint256 _id) public payable returns (uint256) {
-        // require(isRegistered[msg.sender]==true,"");
-        require(verified[msg.sender]==true,"");
-        bool k = false;
-        uint256[] memory okays = getOkayIdsByAddress(msg.sender);
-        for (uint p=0;p<okays.length;p++) {
-            if (okays[p] == _id) {
-                k = true;
-                break;
-            } 
-        }
-        require(k==true,"");
-        Service storage buyService = services[_id];
-        require(buyService.available==true,"");
-        Purchased storage record = records[tradeAmount];
-        record.id=tradeAmount;
-        Current memory current_mem = Current(buyService.id,false);
-        currency[msg.sender].push(current_mem);
-        buyService.pastBuyers.push(msg.sender);
-        record.delivered=false;
-        record.buyer=msg.sender;
-        record.serviceId=buyService.id;
-        tradeAmount+=1;
-        require(msg.value==buyService.fee*50/100,"");
-        payable(deployer).transfer(msg.value);
-        return tradeAmount-1;
-    }
-
-    function addData(uint256 _recordId,
-    string[] memory _imgs) public {
-        require(msg.sender==deployer,"");
+    function addData(
+        uint256 _recordId,
+        string[] memory _imgs) onlyOwner public {
         Purchased storage record = records[_recordId];
         for (uint h = 0 ; h< _imgs.length;h++) {
             record.data.push(_imgs[h]);
-        }
-    }
-
-    function paySecondHalfAllDone(uint256 _serviceId,uint256 _recordId,
-    uint256 _sequence) public payable {
-        // require(isRegistered[msg.sender]==true,"");
-        Service memory buyService = services[_serviceId];
-        bool isThere = false;
-        for (uint i = 0 ; i < buyService.pastBuyers.length;i++) {
-            if (msg.sender==buyService.pastBuyers[i]) {
-                isThere=true;
-                break;
-            }
-        }
-        require(isThere==true,"");
-        Purchased storage record = records[_recordId];
-        require(buyService.id==record.serviceId,"");
-        require(msg.sender==record.buyer,"");
-        require(record.delivered==false);
-        record.delivered=true;
-        require(msg.value==buyService.fee*50/100,"");
-        payable(deployer).transfer(msg.value);
-        updateCurrency(msg.sender, _sequence);
-        uint256 number = checkCurrency(msg.sender);
-        if (number >1) {
-
-        } else {
-            verified[msg.sender]=false;
         }
     }
 
@@ -204,8 +132,7 @@ contract ThreeLancer {
     }
 
     function allService(
-        ) public view returns (Service[] memory) {
-        require(msg.sender==deployer,"");
+        ) onlyOwner public view returns (Service[] memory) {
         Service[] memory allEverCreated = new Service[](serviceAmount);
         for (uint i  =0;i<serviceAmount;i++) {
             Service memory item = services[i];
@@ -214,13 +141,59 @@ contract ThreeLancer {
         return allEverCreated;
     }
 
-    function everyPurchasedData(
-        ) public view returns (Purchased[] memory) {
+    function everyPurchasedData() onlyOwner public view returns (Purchased[] memory) {
         Purchased[] memory allPurchase = new Purchased[](tradeAmount);
         for (uint i  =0;i<tradeAmount;i++) {
             Purchased memory record = records[i];
             allPurchase[i]=record;
         }
         return allPurchase;
+    }
+
+    function allPurchaseByServiceId(
+        uint256 _id
+    ) onlyOwner public view returns (Purchased[] memory) {
+        Purchased[] memory allEverBought = new Purchased[](tradeAmount);
+        uint256 f = 0;
+        for (uint i=0;i<tradeAmount;i++) {
+            Purchased memory item = records[i];
+            if (item.serviceId == _id ) {
+                allEverBought[i]=item;
+                f+=1;
+            }
+        }
+        if (f == serviceAmount) {
+            return allEverBought;
+        } else {
+            Purchased[] memory left = new Purchased[](f);
+            for (uint i  =0;i<f;i++) {
+                left[i]=allEverBought[i];
+            }
+            return left;
+        }
+    }
+
+    function allPurchaseByAddress(
+        address _address
+    ) public view returns (Purchased[] memory) {
+        require(msg.sender==_address||msg.sender==deployer,"");
+        Purchased[] memory allEverBought = new Purchased[](tradeAmount);
+        uint256 f = 0;
+        for (uint i=0;i<tradeAmount;i++) {
+            Purchased memory item = records[i];
+            if (item.buyer == _address ) {
+                allEverBought[i]=item;
+                f+=1;
+            }
+        }
+        if (f == serviceAmount) {
+            return allEverBought;
+        } else {
+            Purchased[] memory left = new Purchased[](f);
+            for (uint i  =0;i<f;i++) {
+                left[i]=allEverBought[i];
+            }
+            return left;
+        }
     }
 }
