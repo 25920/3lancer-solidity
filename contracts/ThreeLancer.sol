@@ -109,7 +109,7 @@ contract ThreeLancer {
         oldRecord.delivered=true;
         require(msg.value==services[oldRecord.serviceId].fee*50/100,"");
         payable(deployer).transfer(msg.value);
-        updateMappingVerified(_id);
+        verified[msg.sender]=updateMappingVerified(_id);
     }
 
     function changeDetail(uint256 _id, uint256 _fee,string memory _desp, string memory _title, uint256 _d) onlyOwner public {
