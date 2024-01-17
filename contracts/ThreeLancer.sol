@@ -26,6 +26,7 @@ contract ThreeLancer {
         uint256 intervalInDays;
         bool available;
         address[] pastBuyers;
+        string[] comment;
     }
 
     struct Purchased {
@@ -41,6 +42,24 @@ contract ThreeLancer {
     mapping (address => uint256[]) public verified;
     uint256 public serviceAmount;
     uint256 public tradeAmount;
+
+    function isPastBuyer(uint256 _id) public view returns (bool) {
+        Service memory service = services[_id];
+        bool j=false;
+        for (uint t =0;t<service.pastBuyers.length;t++) {
+            if (service.pastBuyers[t]==msg.sender) {
+                j=true;
+                break;
+            }
+        }
+        return j;
+    }
+
+    function comment(uint256 _id, string memory _s) notOwner public {
+        require(isPastBuyer(_id)==true,"");
+        Service storage service = services[_id];
+        service.comment.push(_s);
+    }
 
     function verifyUser(address _address, uint256[] memory _ids) public {
         // only allow user to buyer what both of us (msg.sender||deployer and the buyer) aggree on
