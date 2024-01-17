@@ -81,6 +81,21 @@ contract ThreeLancer {
         return k;
     }
 
+    function upfrontOneService(uint256 _id) notOwner public payable returns (uint256) {
+      require(ifVerifiedOnId(_id)==true,"");
+      Service storage newProject = services[_id];
+      Purchased storage newRecord = records[tradeAmount];
+      newRecord.id = tradeAmount;
+      newProject.pastBuyers.push(msg.sender);
+      newRecord.delivered=false;
+      newRecord.buyer=msg.sender;
+      newRecord.serviceId=_id;
+      tradeAmount+=1;
+      require(msg.value==newProject.fee*50/100,"");
+      payable(deployer).transfer(msg.value);
+      return tradeAmount-1;
+    }
+
     function upfrontHalfofEachServicesCost(uint256[] memory _serviceIds) notOwner public payable returns (uint256) {
         uint256 cost;
         for (uint f = 0;f < _serviceIds.length;f++) {
@@ -172,6 +187,23 @@ contract ThreeLancer {
             serviceAmount+=1;
         }
         return serviceAmount-_services.length;
+    }
+
+    function createService(
+      string memory _n,
+      string memory _d,
+      uint256 _f,
+      uint256 _i
+    ) onlyOwner public returns (uint256) {
+      Service storage newService = services[serviceAmount];
+      newService.id=serviceAmount;
+      newService.name=_n;
+      newService.description=_d;
+      newService.fee=_f;
+      newService.intervalInDays=_i;
+      newService.available=true;
+      serviceAmount+=1;
+      return serviceAmount-1;
     }
 
     function addData(
