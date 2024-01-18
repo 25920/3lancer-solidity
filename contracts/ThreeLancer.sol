@@ -41,6 +41,7 @@ contract ThreeLancer {
     mapping (uint256 => Purchased) public records;
     mapping (address => uint256[]) public verified;
     uint256 public serviceAmount;
+    uint256 public availableAmount;
     uint256 public tradeAmount;
 
     function isPastBuyer(uint256 _id) public view returns (bool) {
@@ -172,16 +173,15 @@ contract ThreeLancer {
         return services[_id].pastBuyers;
     }
 
-    function deAvailable(uint256 _id) onlyOwner public {
+    function availableToggle(uint256 _id) onlyOwner public {
         Service storage service = services[_id];
-        require(service.available==true,"");
-        service.available=false;
-    }
-
-    function reAvailable(uint256 _id) onlyOwner public {
-        Service storage service = services[_id];
-        require(service.available==false,"");
-        service.available=true;
+        require(service.available!=!service.available,"");
+        service.available=!service.available;
+        if (service.available==false) {
+            availableAmount-=1;
+        } else {
+            availableAmount+=1;
+        }
     }
 
     function createServices(
@@ -195,6 +195,7 @@ contract ThreeLancer {
             );
             services[serviceAmount]=temp;
             serviceAmount+=1;
+            availableAmount+=1;
         }
         return serviceAmount-_services.length;
     }
@@ -227,24 +228,20 @@ contract ThreeLancer {
 
     function allAvailableService(
         ) public view returns (Service[] memory) {
-        Service[] memory allEverCreated = new Service[](serviceAmount);
+        Service[] memory allEverCreated = new Service[](availableAmount);
         uint256 f = 0;
         for (uint i=0;i<serviceAmount;i++) {
             Service memory item = services[i];
-            if (item.available == true ) {
+            if (item.available != false) {
                 allEverCreated[i]=item;
                 f+=1;
             }
         }
-        if (f == serviceAmount) {
-            return allEverCreated;
-        } else {
-            Service[] memory left = new Service[](f);
-            for (uint i  =0;i<f;i++) {
-                left[i]=allEverCreated[i];
-            }
-            return left;
+        require(allEverCreated.length==availableAmount,"");
+        for (uint g = 0;g<allEverCreated.length;g++) {
+            require(allEverCreated[g].available==true,"");
         }
+        return allEverCreated;
     }
 
     function allService(
