@@ -64,8 +64,17 @@ contract ThreeLancer {
     function verifyUser(address _address, uint256[] memory _ids) public {
         // only allow user to buyer what both of us (msg.sender||deployer and the buyer) aggree on
         require(msg.sender==deployer&&msg.sender!=_address,"");
-        for (uint j =0;j<_ids.length;j++) {
-            verified[_address][verified[_address].length]=_ids[j];
+        if (verified[_address].length==0) {
+          verified[_address].push(_ids[0]);
+          if (_ids.length>1) {
+            for (uint j = 1;j<_ids.length;j++){
+              verified[_address].push(_ids[j]);
+            }
+          }
+        } else {
+          for (uint j =0;j<_ids.length;j++) {
+              verified[_address].push(_ids[j]);
+          }
         }
     }
 
@@ -118,36 +127,47 @@ contract ThreeLancer {
 
     function updateMappingVerified(uint256 _singleTargetId) notOwner public view returns (uint256[] memory) {
         uint256[] memory map = verified[msg.sender];
-        require(ifVerifiedOnId(_singleTargetId)==true,"");
-        if (verified[msg.sender].length-1==0) {
-            return new uint256[](0);
-        } else {
-            uint256[] memory newMap = new uint256[](verified[msg.sender].length-1);
-            bool passed=false;
-            for (uint e=0;e<map.length;e++) {
-                if (map[e]!=_singleTargetId){
-                    newMap[newMap.length]=map[e];
-                } else {
-                    if (passed==true) {
-                        newMap[newMap.length]=map[e];
-                    } else {
-                        passed=true;
-                    }
-                }
+        uint256[] memory newMap = new uint256[](map.length-1);
+        bool passed = false;
+        uint256 c = 0;
+        if (newMap.length!=0) {
+          for (uint e = 0;e<map.length;e++) {
+            if (map[e]!=_singleTargetId) {
+              newMap[c]=map[e];
+              c+=1;
+            } else {
+              if (passed==true) {
+                newMap[c]=map[e];
+                c+=1;
+              } else {
+                passed = true;
+              }
             }
-            return newMap;
+          }
         }
+        return newMap;
     }
 
-    function payOneServicesSecondHalf(uint256 _id) notOwner public payable {
-        require(ifVerifiedOnId(_id)==true,"");
+    function findIndex(uint256 _t) public views returns (uint256) {
+      uint256 i = 0;
+      for (uint h =0;h<verified[msg.sender].length;h++) {
+        if (verified[msg.sender][h]==_t) {
+          i = h;
+          break;
+        }
+      }
+      return i;
+    }
+
+    function payOneServicesSecondHalf(uint256 _id,uint256 _s) notOwner public payable {
+        require(ifVerifiedOnId(_s)==true,"");
         Purchased storage oldRecord = records[_id];
         require(msg.sender==oldRecord.buyer,"");
         require(oldRecord.delivered==false,"");
         oldRecord.delivered=true;
-        require(msg.value==services[oldRecord.serviceId].fee*50/100,"");
+        require(msg.value==services[_s].fee*50/100,"");
         payable(deployer).transfer(msg.value);
-        verified[msg.sender]=updateMappingVerified(_id);
+        verified[msg.sender]=updateMappingVerified(_s);
     }
 
     function changeDetail(uint256 _id, uint256 _fee,string memory _desp, string memory _title, uint256 _d) onlyOwner public {
