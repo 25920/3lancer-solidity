@@ -125,30 +125,20 @@ contract ThreeLancer {
         return tradeAmount-_serviceIds.length;
     }
 
-    function updateMappingVerified(uint256 _singleTargetId) notOwner public view returns (uint256[] memory) {
-        uint256[] memory map = verified[msg.sender];
-        uint256[] memory newMap = new uint256[](map.length-1);
-        bool passed = false;
-        uint256 c = 0;
-        if (newMap.length!=0) {
-          for (uint e = 0;e<map.length;e++) {
-            if (map[e]!=_singleTargetId) {
-              newMap[c]=map[e];
-              c+=1;
-            } else {
-              if (passed==true) {
-                newMap[c]=map[e];
-                c+=1;
-              } else {
-                passed = true;
-              }
-            }
-          }
+    function updateMappingVerified(uint256 _serviceId) notOwner public {
+      uint256 index = findIndex(_serviceId);
+      require(index<=verified[msg.sender].length-1,"");
+      uint256[] storage arr = verified[msg.sender]; 
+      uint256 cx = 0;
+      for (uint i = 0; i<arr.length; i++){
+        if (i!=index) {
+          arr[cx]=arr[i];
         }
-        return newMap;
+      }
+      arr.pop();
     }
 
-    function findIndex(uint256 _t) public views returns (uint256) {
+    function findIndex(uint256 _t) public view returns (uint256) {
       uint256 i = 0;
       for (uint h =0;h<verified[msg.sender].length;h++) {
         if (verified[msg.sender][h]==_t) {
@@ -167,7 +157,7 @@ contract ThreeLancer {
         oldRecord.delivered=true;
         require(msg.value==services[_s].fee*50/100,"");
         payable(deployer).transfer(msg.value);
-        verified[msg.sender]=updateMappingVerified(_s);
+        updateMappingVerified(_s);
     }
 
     function changeDetail(uint256 _id, uint256 _fee,string memory _desp, string memory _title, uint256 _d) onlyOwner public {
